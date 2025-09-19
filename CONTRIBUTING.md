@@ -1,93 +1,16 @@
-## Contributing to YOLOv5 🚀
+致力于棉花顶芽检测与定位的模型算法开发，棉花顶芽检测与定位这个看似“小众”的场景里，把模型算法从零到一、再到完整迭代闭环真正跑通，其意义远远不止“发一篇论文”或“跑个高分 mAP”。它本质上是在“高价值作物+密集种植+人工缺口”三大矛盾交汇点，撕开一个可复制、可扩张的“AI 精准农事”切口。
 
-We love your input! We want to make contributing to YOLOv5 as easy and transparent as possible, whether it's:
-
-- Reporting a bug
-- Discussing the current state of the code
-- Submitting a fix
-- Proposing a new feature
-- Becoming a maintainer
-
-YOLOv5 works so well due to our combined community effort, and for every small improvement you contribute you will be
-helping push the frontiers of what's possible in AI 😃!
-
-## Submitting a Pull Request (PR) 🛠️
-
-Submitting a PR is easy! This example shows how to submit a PR for updating `requirements.txt` in 4 steps:
-
-### 1. Select File to Update
-
-Select `requirements.txt` to update by clicking on it in GitHub.
-
-<p align="center"><img width="800" alt="PR_step1" src="https://user-images.githubusercontent.com/26833433/122260847-08be2600-ced4-11eb-828b-8287ace4136c.png"></p>
-
-### 2. Click 'Edit this file'
-
-Button is in top-right corner.
-
-<p align="center"><img width="800" alt="PR_step2" src="https://user-images.githubusercontent.com/26833433/122260844-06f46280-ced4-11eb-9eec-b8a24be519ca.png"></p>
-
-### 3. Make Changes
-
-Change `matplotlib` version from `3.2.2` to `3.3`.
-
-<p align="center"><img width="800" alt="PR_step3" src="https://user-images.githubusercontent.com/26833433/122260853-0a87e980-ced4-11eb-9fd2-3650fb6e0842.png"></p>
-
-### 4. Preview Changes and Submit PR
-
-Click on the **Preview changes** tab to verify your updates. At the bottom of the screen select 'Create a **new branch**
-for this commit', assign your branch a descriptive name such as `fix/matplotlib_version` and click the green **Propose
-changes** button. All done, your PR is now submitted to YOLOv5 for review and approval 😃!
-
-<p align="center"><img width="800" alt="PR_step4" src="https://user-images.githubusercontent.com/26833433/122260856-0b208000-ced4-11eb-8e8e-77b6151cbcc3.png"></p>
-
-### PR recommendations
-
-To allow your work to be integrated as seamlessly as possible, we advise you to:
-
-- ✅ Verify your PR is **up-to-date** with `ultralytics/yolov5` `master` branch. If your PR is behind you can update
-  your code by clicking the 'Update branch' button or by running `git pull` and `git merge master` locally.
-
-<p align="center"><img width="751" alt="Screenshot 2022-08-29 at 22 47 15" src="https://user-images.githubusercontent.com/26833433/187295893-50ed9f44-b2c9-4138-a614-de69bd1753d7.png"></p>
-
-- ✅ Verify all YOLOv5 Continuous Integration (CI) **checks are passing**.
-
-<p align="center"><img width="751" alt="Screenshot 2022-08-29 at 22 47 03" src="https://user-images.githubusercontent.com/26833433/187296922-545c5498-f64a-4d8c-8300-5fa764360da6.png"></p>
-
-- ✅ Reduce changes to the absolute **minimum** required for your bug fix or feature addition. _"It is not daily increase
-  but daily decrease, hack away the unessential. The closer to the source, the less wastage there is."_  — Bruce Lee
-
-## Submitting a Bug Report 🐛
-
-If you spot a problem with YOLOv5 please submit a Bug Report!
-
-For us to start investigating a possible problem we need to be able to reproduce it ourselves first. We've created a few
-short guidelines below to help users provide what we need in order to get started.
-
-When asking a question, people will be better able to provide help if you provide **code** that they can easily
-understand and use to **reproduce** the problem. This is referred to by community members as creating
-a [minimum reproducible example](https://stackoverflow.com/help/minimal-reproducible-example). Your code that reproduces
-the problem should be:
-
-- ✅ **Minimal** – Use as little code as possible that still produces the same problem
-- ✅ **Complete** – Provide **all** parts someone else needs to reproduce your problem in the question itself
-- ✅ **Reproducible** – Test the code you're about to provide to make sure it reproduces the problem
-
-In addition to the above requirements, for [Ultralytics](https://ultralytics.com/) to provide assistance your code
-should be:
-
-- ✅ **Current** – Verify that your code is up-to-date with current
-  GitHub [master](https://github.com/ultralytics/yolov5/tree/master), and if necessary `git pull` or `git clone` a new
-  copy to ensure your problem has not already been resolved by previous commits.
-- ✅ **Unmodified** – Your problem must be reproducible without any modifications to the codebase in this
-  repository. [Ultralytics](https://ultralytics.com/) does not provide support for custom code ⚠️.
-
-If you believe your problem meets all of the above criteria, please close this issue and raise a new one using the 🐛
-**Bug Report** [template](https://github.com/ultralytics/yolov5/issues/new/choose) and providing
-a [minimum reproducible example](https://stackoverflow.com/help/minimal-reproducible-example) to help us better
-understand and diagnose your problem.
-
-## License
-
-By contributing, you agree that your contributions will be licensed under
-the [GPL-3.0 license](https://choosealicense.com/licenses/gpl-3.0/)
+**直接决定“无人化打顶”能不能闭环**
+棉花整枝最费人工的就是打顶（掐掉顶芽）。一台 3 m 宽、1 km/h 速度的打顶机车，每小时要处理 3000 株，对定位误差容忍度＜5 mm。算法如果不能把 False Negative 压到 1% 以下，机车就会“漏打”；False Positive 超过 3%，又会“误打”果枝，直接减产。完整迭代=在真实地块里把这两个指标同时压线，机器才敢“无人”跑起来。否则就是“演示型”农机，永远停在 PPT 里。
+**把“实验室精度”翻译成“大田鲁棒性”**
+棉花 7–8 月田间光照动态范围 100 dB 以上，叶子反射、尘土、雨滴、震动、遮挡层出不穷。只做一次训练-测试的“静态精度”毫无意义。完整迭代意味着：
+‑ 建立“日-周-季”连续数据采集管线（无人机、手持、车载多视角）；
+‑ 做“domain-shift 自动发现→主动学习→快速重训”闭环，让模型随生育期、地域、品种自进化；
+‑ 把“平均精度”拆成“晴天/阴天/雨后/尘后”四条曲线，看到底哪一環节掉点，再反向改数据、改网络、改后处理。
+这一套工程化方法论，才是把“90% 实验室精度”翻译成“85% 田间可持续精度”的唯一途径。
+**给“棉花数字孪生”提供最小粒度语义**
+顶芽是棉花“顶端优势”的开关，它的时空坐标序列≈植株生长速率曲线。把每株棉的顶芽 3-D 坐标按时间戳堆起来，就能在“株-行-块”三级做生长一致性检测，提前 5–7 天发现缺肥、缺水、药害。换句话说，顶芽定位算法一旦稳定，就等于给大田装了一套“毫米级生长传感器”，这是任何遥感或环境传感器都达不到的粒度。
+**打造“高价值经济作物”算法样板，可复制到烟草、番茄、辣椒等 30+ 作物**
+棉花打顶难度（遮挡、形态变异、密集种植）在农作物里属于 T1 梯队。算法如果能在这里跑通，向下可降维打击烟草打顶、番茄去腋芽、辣椒摘心等场景；向上可为葡萄剪梢、苹果摘心提供技术栈。完整迭代过程沉淀的“小目标+遮挡+自监督”技术包，就是精准园艺里的“杀手级”中间件。
+**形成“数据-模型-农机-服务”商业飞轮**
+一次完整迭代 ≈ 把“数据标注→模型训练→边缘部署→田间验证→用户反馈”全流程跑通，并量化为“每亩成本节省 28–35 元（人工打顶费 40 元/亩，机车打顶 12 元/亩）”。当农户看到“省钱+不减产”，才会愿意按亩付 3–5 元算法服务费；服务费回流又能支撑持续数据采集，让模型越用越便宜、越用越准。只有完成这个闭环，资本才敢大规模投打顶机车，算法团队才能从“项目制”转向“订阅制”，真正脱离“科研补贴”输血。
