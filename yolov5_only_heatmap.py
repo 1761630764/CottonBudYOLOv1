@@ -1,0 +1,190 @@
+import warnings
+import torch
+import numpy as np
+import cv2
+import os
+import shutil
+import matplotlib.pyplot as plt
+from PIL import Image
+from tqdm import trange
+from models.yolo import Model
+from utils.general import intersect_dicts
+from utils.augmentations import letterbox
+from utils.general import xywh2xyxy, non_max_suppression
+from models.experimental import attempt_load
+from pytorch_grad_cam import GradCAMPlusPlus, GradCAM, XGradCAM, EigenCAM, HiResCAM, LayerCAM, RandomCAM, EigenGradCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image, scale_cam_image
+from pytorch_grad_cam.activations_and_gradients import ActivationsAndGradients
+
+warnings.filterwarnings('ignore')
+warnings.simplefilter('ignore')
+
+class ActivationsAndGradients:
+    """ Class for extracting activations and
+    registering gradients from targetted intermediate layers """
+
+    def __init__(self, model, target_layers, reshape_transform):
+        self.model = model
+        self.gradients = []
+        self.activations = []
+        self.reshape_transform = reshape_transform
+        self.handles = []
+        for target_layer in target_layers:
+            self.handles.append(
+                target_layer.register_forward_hook(self.save_activation))
+            # Because of https://github.com/pytorch/pytorch/issues/61519,
+            # we don't use backward hook to record gradients.
+            self.handles.append(
+                target_layer.register_forward_hook(self.save_gradient))
+
+    def save_activation(self, module, input, output):
+        activation = output
+
+        if self.reshape_transform is not None:
+            activation = self.reshape_transform(activation)
+        self.activations.append(activation.cpu().detach())
+
+    def save_gradient(self, module, input, output):
+        if not hasattr(output, "requires_grad") or not output.requires_grad:
+            # You can only register hooks on tensor requires grad.
+            return
+
+        # Gradients are computed in reverse order
+        def _store_grad(grad):
+            if self.reshape_transform is not None:
+                grad = self.reshape_transform(grad)
+            self.gradients = [grad.cpu().detach()] + self.gradients
+
+        output.register_hook(_store_grad)
+
+    def post_process(self, result):
+        logits_ = result[..., 4:]
+        boxes_ = result[..., :4]
+        sorted, indices = torch.sort(logits_[..., 0], descending=True)
+        return logits_[0][indices[0]], xywh2xyxy(boxes_[0][indices[0]]).cpu().detach().numpy()
+
+    def __call__(self, x):
+        self.gradients = []
+        self.activations = []
+        model_output = self.model(x)
+        post_result, pre_post_boxes = self.post_process(model_output[0])
+        return [[post_result, pre_post_boxes]]
+
+    def release(self):
+        for handle in self.handles:
+            handle.remove()
+
+
+class yolov5_target(torch.nn.Module):
+    def __init__(self, ouput_type, conf, ratio) -> None:
+        super().__init__()
+        self.ouput_type = ouput_type
+        self.conf = conf
+        self.ratio = ratio
+
+    def forward(self, data):
+        post_result, pre_post_boxes = data
+        result = []
+        for i in trange(int(post_result.size(0) * self.ratio)):
+            if float(post_result[i, 1:].max()) < self.conf:
+                break
+            if self.ouput_type == 'class' or self.ouput_type == 'all':
+                result.append(post_result[i, 1:].max())
+            elif self.ouput_type == 'box' or self.ouput_type == 'all':
+                for j in range(4):
+                    result.append(pre_post_boxes[i, j])
+        return sum(result)
+
+
+class yolov5_heatmap:
+    def __init__(self, weight, device, method, layer, backward_type, conf_threshold, ratio, show_box, renormalize):
+        device = torch.device(device)
+        ckpt = torch.load(weight)
+        model_names = ckpt['model'].names
+        model = attempt_load(weight, device=device)
+        for p in model.parameters():
+            p.requires_grad_(True)
+        model.eval()
+
+        target = yolov5_target(backward_type, conf_threshold, ratio)
+        target_layers = [model.model[l] for l in layer]
+        method = eval(method)(model, target_layers, use_cuda=device.type == 'cuda')
+        method.activations_and_grads = ActivationsAndGradients(model, target_layers, None)
+
+        colors = np.random.uniform(0, 255, size=(len(model_names), 3)).astype(np.int)
+        self.__dict__.update(locals())
+
+    def post_process(self, result):
+        result = non_max_suppression(result, conf_thres=self.conf_threshold, iou_thres=0.65)[0]
+        return result
+
+    def renormalize_cam_in_bounding_boxes(self, boxes, image_float_np, grayscale_cam):
+        """Normalize the CAM to be in the range [0, 1]
+        inside every bounding boxes, and zero outside of the bounding boxes. """
+        renormalized_cam = np.zeros(grayscale_cam.shape, dtype=np.float32)
+        for x1, y1, x2, y2 in boxes:
+            x1, y1 = max(x1, 0), max(y1, 0)
+            x2, y2 = min(grayscale_cam.shape[1] - 1, x2), min(grayscale_cam.shape[0] - 1, y2)
+            renormalized_cam[y1:y2, x1:x2] = scale_cam_image(grayscale_cam[y1:y2, x1:x2].copy())
+        renormalized_cam = scale_cam_image(renormalized_cam)
+        eigencam_image_renormalized = show_cam_on_image(image_float_np, renormalized_cam, use_rgb=False)
+        return eigencam_image_renormalized
+
+    def process(self, img_path, save_path):
+        # Image processing
+        img = cv2.imread(img_path)
+        img = letterbox(img)[0]
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = np.float32(img) / 255.0
+        tensor = torch.from_numpy(np.transpose(img, axes=[2, 0, 1])).unsqueeze(0).to(self.device)
+
+        try:
+            grayscale_cam = self.method(tensor, [self.target])
+        except AttributeError as e:
+            return
+
+        grayscale_cam = grayscale_cam[0, :]  # Get the first channel
+        cam_image = scale_cam_image(grayscale_cam)  # Normalize CAM to [0, 1]
+
+        # Apply a color map to the CAM image
+        cam_image = np.uint8(255 * cam_image)  # Convert to 8-bit image
+        color_cam_image = cv2.applyColorMap(cam_image, cv2.COLORMAP_JET)  # Apply a color map
+        color_cam_image = cv2.cvtColor(color_cam_image, cv2.COLOR_BGR2RGB)  # Convert color space to RGB
+
+        # Save the colored CAM image
+        color_cam_image = Image.fromarray(color_cam_image)
+        color_cam_image.save(save_path)
+
+    def __call__(self, img_path, save_path):
+        # remove dir if exist
+        if os.path.exists(save_path):
+            shutil.rmtree(save_path)
+        # make dir if not exist
+        os.makedirs(save_path, exist_ok=True)
+
+        if os.path.isdir(img_path):
+            for img_path_ in os.listdir(img_path):
+                self.process(f'{img_path}/{img_path_}', f'{save_path}/{img_path_}')
+        else:
+            self.process(img_path, f'{save_path}/result.png')
+
+
+def get_params():
+    params = {
+        'weight': r'E:\Python_Learn_Source\YOLO\yolov5_7.0_LightWeight_Head_Attention_Loss\runs\train\yolov5s_ShuffleNetv2_Dysample_ASFFHead_GCx4\weights\best.pt',
+        'device': 'cpu',  # cuda:0
+        'method': 'GradCAMPlusPlus',
+        # GradCAMPlusPlus, GradCAM, XGradCAM, EigenCAM, HiResCAM, LayerCAM, RandomCAM, EigenGradCAM
+        'layer': [19, 23, 27],
+        'backward_type': 'class',  # class, box, all
+        'conf_threshold': 0.45,  # 0.6
+        'ratio': 0.023,  # 0.02-0.1
+        'show_box': False,
+        'renormalize': False
+    }
+    return params
+
+
+if __name__ == '__main__':
+    model = yolov5_heatmap(**get_params())
+    model(r'E:\Python_Learn_Source\YOLO\yolov5_7.0_LightWeight_Head_Attention_Loss\datasets\demo_image', 'result')

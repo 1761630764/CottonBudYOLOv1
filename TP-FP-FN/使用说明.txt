@@ -1,0 +1,17 @@
+images：测试集照片
+labels： 测试集对应的标签
+predict： 先运行detect.py检测  测试集， 生成的预测标签labels复制粘贴到predict
+----------------------------------------------------------------------------------------------------------------------
+在detect.py文件中配置好参数：--weights   --source     --data   --device
+运行下面指令：
+python detect.py --save-txt --save-conf
+
+得到预测标签，复制粘贴到predict
+
+配置   统计.py 后
+运行   统计.py
+
+结果分析：
+right：检测出来的正确目标  黄色
+error：误检，检测出来了  但是不是正确的目标  蓝色
+missing： 正确目标丢失，没检测出来  红色
