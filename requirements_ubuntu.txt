@@ -29,7 +29,7 @@ Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 matplotlib==3.7.5
-matplotlib-inline==0.1.6
+matplotlib-inline==0.1.7
 mdurl==0.1.2
 mmcv==2.0.0
 mmengine==0.10.3
