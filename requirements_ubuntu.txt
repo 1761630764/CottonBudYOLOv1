@@ -4,7 +4,7 @@ asttokens==2.4.1
 backcall==0.2.0
 cachetools==5.3.3
 certifi==2024.2.2
-charset-normalizer==3.3.2
+charset-normalizer==3.4.3
 colorama==0.4.6
 contourpy==1.1.1
 cycler==0.12.1
