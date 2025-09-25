@@ -1,7 +1,9 @@
+v2版本地址：    https://github.com/1761630764/CottonBudYOLOv2
 
-基于YOLOv5 7.0 开发棉花顶芽检测模型CottonBudYOLOv1模型 🚀
 
-CottonBudYOLOv1已经停止维护更新，后续CottonBudYOLOv2项目（https://github.com/1761630764/CottonBudYOLOv2）基于Ultrylytics库进行进一步开发和维护，主要工作：
+v1基于YOLOv5 7.0 开发棉花顶芽检测模型CottonBudYOLOv1模型 🚀
+
+CottonBudYOLOv1已经停止维护更新，后续CottonBudYOLOv2项目基于Ultrylytics库进行进一步开发和维护，主要工作：
 
 1、v1模块迁移
 2、基于v1模型的有效模块，进一步v2解决跨域问题
@@ -12,8 +14,6 @@ CottonBudYOLOv1已经停止维护更新，后续CottonBudYOLOv2项目（https://
 python>=3.7
 pip install requriments.txt
 '''
-
-
 
 实验结果如图所示
 
